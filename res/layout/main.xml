@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+   android:id = "@+id/container"
+    android:orientation="vertical"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:background="@drawable/bg_chat"
+    >
+<RelativeLayout
+	  android:layout_width="fill_parent"
+	  android:layout_height="95.0dip"
+	  android:id= "@+id/bottombar"
+	  android:layout_alignParentBottom = "true"
+	  android:gravity="center">
+  <RelativeLayout
+	  android:layout_width="fill_parent"
+	  android:layout_height="fill_parent"
+	  android:id= "@+id/speak_bottombar">  
+    <ImageButton
+      	  android:id = "@+id/voice_input"
+      	  android:layout_width = "wrap_content"
+      	  android:layout_height = "85.0dip"
+          android:padding="5.0dip"
+          android:layout_centerInParent="true"
+      	  android:src="@drawable/siri_button"
+          android:scaleType="fitCenter"
+          android:background="@null" 
+      />      
+    </RelativeLayout>  
+   
+    <RelativeLayout
+	  android:layout_width="fill_parent"
+	  android:layout_height="wrap_content"
+	  android:id= "@+id/edit_bottombar"
+	  android:visibility="gone">
+    <ImageButton
+      	  android:id = "@+id/speak_input"
+      	  android:layout_width = "wrap_content"
+      	  android:layout_height = "50dip"
+          android:padding="5.0dip"
+      	  android:layout_alignParentLeft ="true"
+      	  android:src="@drawable/mic"
+          android:adjustViewBounds="true"
+          android:background="@null" 
+      />
+  <ImageButton
+         android:id = "@+id/btn_msg_send"
+      	 android:layout_width = "wrap_content"
+      	 android:layout_height = "50dip"
+      	 android:layout_alignParentRight ="true"
+      	 android:src="@drawable/send_btn"
+         android:padding="5.0dip"
+         android:scaleType="fitXY"	
+         android:background="@null"
+      />
+    <EditText
+         android:layout_width="fill_parent"
+      	 android:layout_height = "50dip"
+      	 android:layout_toLeftOf="@id/btn_msg_send" 
+         android:layout_toRightOf="@id/speak_input"      	
+      	 android:hint = "说点什么呢"
+      	 android:textSize="18dip"
+      	 android:id = "@+id/MessageText"
+      	 android:maxLines="3"
+	     android:background="@android:drawable/edit_text"/>
+      </RelativeLayout>  
+</RelativeLayout>
+
+ <ListView  
+    android:id="@+id/list"
+    android:layout_width="fill_parent"  
+    android:layout_height="fill_parent" 
+    android:scrollingCache="false" 
+    android:divider="#ffc6c6c6" 
+    android:layout_weight="1.0" 
+    android:layout_above = "@id/bottombar"   
+    />
+</RelativeLayout>
