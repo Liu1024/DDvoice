@@ -56,12 +56,6 @@ public class MainActivity extends Activity implements OnItemClickListener ,OnCli
      * Whether or not the system UI should be auto-hidden after
      * {@link #AUTO_HIDE_DELAY_MILLIS} milliseconds.
      */
-	/*public void showTip(String tip){
-		info.makeText(getApplicationContext(), tip, 1000);
-		info.show();
-	}*/
-	
-	
 	
 	//from SiriCN
 	private ProgressDialog mProgressDialog;//进程提示框
@@ -71,9 +65,7 @@ public class MainActivity extends Activity implements OnItemClickListener ,OnCli
 	private ArrayList<SiriListItem> list;
 	ChatMsgViewAdapter mAdapter;
 	
-	
-	
-	
+
 	//识别结果
 	private String recognizerResult;
 	private static String TAG = MainActivity.class.getSimpleName();
@@ -94,7 +86,7 @@ public class MainActivity extends Activity implements OnItemClickListener ,OnCli
 		 //听写UI监听器
 		private RecognizerDialogListener recognizerDialogListener = new RecognizerDialogListener() {
 			public void onResult(RecognizerResult results, boolean isLast) {
-				printResult(results);
+				printResult(results,isLast);
 			}
 
 			/**
@@ -109,42 +101,34 @@ public class MainActivity extends Activity implements OnItemClickListener ,OnCli
 		};
 		
 	//语音识别监听器
-		private RecognizerListener recognizerListener = new RecognizerListener() {
-
-			 
+		private RecognizerListener recognizerListener = new RecognizerListener() { 
 			public void onBeginOfSpeech() {
+				//info.makeText(getApplicationContext(), "开始说话", 100).show();
 				//showTip("开始说话");
-			}
-
-			 
+			}	 
 			public void onError(SpeechError error) {
 				// Tips：
 				// 错误码：10118(您没有说话)，可能是录音机权限被禁，需要提示用户打开应用的录音权限。
 				// 如果使用本地功能（语音+）需要提示用户开启语音+的录音权限。
-				//showTip(error.getPlainDescription(true));
-			}
-
-			 
+				//info.makeText(getApplicationContext(), error.getPlainDescription(true), 1000).show();
+				showTip(error.getPlainDescription(true));
+			} 
 			public void onEndOfSpeech() {
-				//showTip("结束说话");
-			}
-
-			 
+				//info.makeText(getApplicationContext(), "结束说话", 100).show();
+				showTip("结束说话");
+			} 
 			public void onResult(RecognizerResult results, boolean isLast) {
 				Log.d(TAG, results.getResultString());
-				printResult(results);
+				printResult(results,isLast);
 
 				if (isLast) {
 					// TODO 最后的结果
 				}
-			}
-
-			 
+			} 
 			public void onVolumeChanged(int volume) {
-				//showTip("当前正在说话，音量大小：" + volume);
-			}
-
-			 
+				showTip("当前正在说话，音量大小：" + volume);
+				//info.makeText(getApplicationContext(), "当前正在说话，音量大小：" + volume, 100).show();
+			} 
 			public void onEvent(int eventType, int arg1, int arg2, Bundle obj) {
 			}
 		};
@@ -161,7 +145,7 @@ private InitListener mInitListener = new InitListener() {
 	public void onInit(int code) {
 		Log.d(TAG, "SpeechRecognizer init() code = " + code);
 		if (code != ErrorCode.SUCCESS) {
-			//showTip("初始化失败，错误码：" + code);
+			showTip("初始化失败，错误码：" + code);
 		}
 	}
 };
@@ -172,20 +156,23 @@ private InitListener mInitListener = new InitListener() {
 		getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
 		WindowManager.LayoutParams.FLAG_FULLSCREEN);
 		setContentView(R.layout.main);
+		info=Toast.makeText(this, "", Toast.LENGTH_SHORT);
 			/*mProgressDialog = new ProgressDialog(this);
 			mProgressDialog.setMessage("正在初始化，请稍候…… ^_^");
 			mProgressDialog.setCancelable(false);
 			mProgressDialog.show();*/
-			info.makeText(getApplicationContext(), "初始化中...", 50).show();
+			showTip("初始化中...");
+			//info.makeText(getApplicationContext(), "初始化中...", 5).show();
 	       // showTip("hai");
 			initIflytek();
 			initUI();
 			speechRecognition();
 			//mProgressDialog.dismiss();
-			info.makeText(getApplicationContext(), "初始化完毕", 50).show();
+			showTip("初始化完毕");
+			//info.makeText(getApplicationContext(), "初始化完毕", 5).show();
 			player = MediaPlayer.create(MainActivity.this, R.raw.lock);
 			player.start();
-			speak("初始化完成 欢迎使用", false);
+			speak("你好，我是小D，您的智能语义助手。", false);
     }
 
     public void initIflytek(){//初始讯飞设置
@@ -217,23 +204,18 @@ private InitListener mInitListener = new InitListener() {
     }
     
     public void test(){
-    	info.makeText(getApplicationContext(), "请说话", 500).show();
-    	// 不显示听写对话框
     	// 显示听写对话框
     	mIatDialog.setListener(recognizerDialogListener);
 		//mIatDialog.show();
 		ret = mIat.startListening(recognizerListener);
 		if (ret != ErrorCode.SUCCESS) {
 			Log.d(TAG, ""+ret);
-			info.makeText(getApplicationContext(), "听写失败,错误码：" + ret, 100).show();
-			//showTip("听写失败,错误码：" + ret);
-		} else {
-			info.makeText(getApplicationContext(), "听写成功", 100).show();
-			//showTip("成功");
+			showTip("听写失败,错误码：" + ret);
+			//info.makeText(getApplicationContext(), "听写失败,错误码：" + ret, 100).show();
 		}
     }
     
-    private void printResult(RecognizerResult results) {
+    private void printResult(RecognizerResult results,boolean isLast) {
 		String text = JsonParser.parseIatResult(results.getResultString());
 
 		String sn = null;
@@ -252,16 +234,8 @@ private InitListener mInitListener = new InitListener() {
 			resultBuffer.append(mIatResults.get(key));
 		}
 		recognizerResult=resultBuffer.toString();
-		if(recognizerResult!=null){
-			info.makeText(getApplicationContext(), recognizerResult, 1000).show();
-			speak(resultBuffer.toString(), true);
-		}
-		else{
-			info.makeText(getApplicationContext(), "未识别", 1000).show();
-			speak("未识别", true);
-		}
-		//mResultText.setText(resultBuffer.toString());
-		//mResultText.setSelection(mResultText.length());
+		if(isLast==true)
+		speak(recognizerResult, true);
 	}
     
     int ret = 0; // 函数调用返回值
@@ -272,6 +246,7 @@ private InitListener mInitListener = new InitListener() {
 		player = MediaPlayer.create(MainActivity.this, R.raw.begin);
 		player.start();
 		test();
+		//以下代码不能直接放在这里，不然出错，？？？
 		/*info.makeText(getApplicationContext(), "5", 1000).show();
 		// TODO Auto-generated method stub
 		if(view.getId()==R.id.voice_input){
@@ -355,6 +330,11 @@ private InitListener mInitListener = new InitListener() {
 			message = msg;
 			isSiri = siri;
 		}
+	}
+	
+	private void showTip(final String str) {
+		info.setText(str);
+		info.show();
 	}
 	
 	
