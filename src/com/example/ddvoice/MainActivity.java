@@ -27,12 +27,14 @@ import com.example.ddvoice.JsonParser;
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.ProgressDialog;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.media.MediaPlayer;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
+import android.text.TextUtils;
 import android.util.Log;
 //import android.speech.SpeechRecognizer;//不用这个
 import android.view.MotionEvent;
@@ -57,6 +59,10 @@ public class MainActivity extends Activity implements OnItemClickListener ,OnCli
      * {@link #AUTO_HIDE_DELAY_MILLIS} milliseconds.
      */
 	
+	//语义
+	private TextUnderstander mTextUnderstander;// 语义理解对象（文本到语义）。
+	
+	
 	//from SiriCN
 	private ProgressDialog mProgressDialog;//进程提示框
 	private MediaPlayer player;//播放音乐
@@ -66,8 +72,9 @@ public class MainActivity extends Activity implements OnItemClickListener ,OnCli
 	ChatMsgViewAdapter mAdapter;
 	
 
-	//识别结果
-	private String recognizerResult;
+
+	public static  String SRResult="";	//识别结果
+	private String SAResult="";//语义识别结果
 	private static String TAG = MainActivity.class.getSimpleName();
 	//Toast提示消息
 	private Toast info;
@@ -118,7 +125,7 @@ public class MainActivity extends Activity implements OnItemClickListener ,OnCli
 				showTip("结束说话");
 			} 
 			public void onResult(RecognizerResult results, boolean isLast) {
-				Log.d(TAG, results.getResultString());
+				//Log.d("dd", results.getResultString());
 				printResult(results,isLast);
 
 				if (isLast) {
@@ -136,21 +143,38 @@ public class MainActivity extends Activity implements OnItemClickListener ,OnCli
 
 
 	
-/**
- * 初始化监听器。
- */
-private InitListener mInitListener = new InitListener() {
-
-	 
-	public void onInit(int code) {
-		Log.d(TAG, "SpeechRecognizer init() code = " + code);
-		if (code != ErrorCode.SUCCESS) {
-			showTip("初始化失败，错误码：" + code);
+	/**
+	 * 初始化监听器。
+	 */
+	private InitListener mInitListener = new InitListener() {
+	
+		 
+		public void onInit(int code) {
+			Log.d(TAG, "SpeechRecognizer init() code = " + code);
+			if (code != ErrorCode.SUCCESS) {
+				showTip("初始化失败，错误码：" + code);
+			}
 		}
-	}
-};
+	};
+
+	//初始化监听器（文本到语义）。
+    private InitListener textUnderstanderListener = new InitListener() {
+		public void onInit(int code) {
+			Log.d(TAG, "textUnderstanderListener init() code = " + code);
+			if (code != ErrorCode.SUCCESS) {
+        		//showTip("初始化失败,错误码："+code);
+				Log.d("dd","初始化失败,错误码："+code);
+        	}
+		}
+    };
+	
+	
+	//private SemanticAnalysis semanticAnalysis;//语义分析实例
+	
+	
   
     protected void onCreate(Bundle savedInstanceState) {
+    	
         super.onCreate(savedInstanceState);
         requestWindowFeature(Window.FEATURE_NO_TITLE);
 		getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
@@ -172,7 +196,8 @@ private InitListener mInitListener = new InitListener() {
 			//info.makeText(getApplicationContext(), "初始化完毕", 5).show();
 			player = MediaPlayer.create(MainActivity.this, R.raw.lock);
 			player.start();
-			speak("你好，我是小D，您的智能语义助手。", false);
+			speak("你好，我是小D，您的智能语音助手。", false);
+			
     }
 
     public void initIflytek(){//初始讯飞设置
@@ -184,7 +209,7 @@ private InitListener mInitListener = new InitListener() {
     }
     
     public void initUI(){//初始化UI和参数
-    	recognizerResult="";
+    	SRResult="";
     	list = new ArrayList<SiriListItem>();
 		mAdapter = new ChatMsgViewAdapter(this, list);
 		mListView = (ListView) findViewById(R.id.list);
@@ -203,7 +228,7 @@ private InitListener mInitListener = new InitListener() {
     	
     }
     
-    public void test(){
+    public void test(){//语音识别
     	// 显示听写对话框
     	mIatDialog.setListener(recognizerDialogListener);
 		//mIatDialog.show();
@@ -213,6 +238,106 @@ private InitListener mInitListener = new InitListener() {
 			showTip("听写失败,错误码：" + ret);
 			//info.makeText(getApplicationContext(), "听写失败,错误码：" + ret, 100).show();
 		}
+		
+    }
+    
+    
+    //开始语义识别
+    private void startSA(){
+    	//semanticAnalysis=new SemanticAnalysis();
+    	//SAResult=semanticAnalysis.getSAResult("我是刘冬冬");//开始语义分析
+    	//UnderstanderDemo testSA=new UnderstanderDemo();
+    	//SAResult=testSA.startSA("我是刘冬冬");
+    	
+    	
+    	
+    	/*Intent SAActivity = new Intent(MainActivity.this,SemanticAnalysis.class);
+    	SAActivity.putExtra("SRResult", SRResult);
+    	Log.d("dd","识别结果："+SRResult);
+    	startActivityForResult(SAActivity,0 );*/
+    
+    	//onActivityResult(0, 0, SAActivity);
+    	
+    /*	Intent SAActivity = new Intent(MainActivity.this,SemanticAnalysis.class);
+    	startActivity(SAActivity);
+    	
+    	SemanticAnalysis semanticAnalysis = new SemanticAnalysis();
+    	SAResult=semanticAnalysis.SAResult;
+    	speak(SAResult, false);*/
+    	
+    	
+    	// SRResult=MainActivity.SRResult;
+ 	
+ 		Log.d("dd","SRResult:"+SRResult);
+ 		ret=0 ;
+ 		
+ 		mTextUnderstander = TextUnderstander.createTextUnderstander(MainActivity.this, textUnderstanderListener);
+ 		startAnalysis();
+    }
+    
+  //开始分析
+  	private void startAnalysis(){
+  		
+  		
+  		if(mTextUnderstander.isUnderstanding()){
+  			mTextUnderstander.cancel();
+  			//showTip("取消");
+  			Log.d("dd","取消");
+  		}else {
+  			ret = mTextUnderstander.understandText(SRResult, textListener);
+  			if(ret != 0)
+  			{
+  				//showTip("语义理解失败,错误码:"+ ret);
+  				Log.d("dd","语义理解失败,错误码:"+ ret);
+  			}
+  		}
+  		/*ret = mTextUnderstander.understandText(SRResult, textListener);
+  		if(ret != 0)
+  		{
+  			showTip("语义理解失败,错误码:"+ ret);
+  			
+  		}*/
+  	}
+  	 //识别回调
+      private TextUnderstanderListener textListener = new TextUnderstanderListener() {
+  		
+  		public void onResult(final UnderstanderResult result) {
+  	       	runOnUiThread(new Runnable() {
+  					
+  					public void run() {
+  						if (null != result) {
+  			            	// 显示
+  							//Log.d(TAG, "understander result：" + result.getResultString());
+  							String text = result.getResultString();
+  							SAResult=text;
+  							Log.d("dd","SAResult:"+SAResult);
+  							if (TextUtils.isEmpty(text)) {
+  								//Log.d("dd", "understander result:null");
+  								//showTip("识别结果不正确。");
+  							}
+  							//mainActivity.speak();
+  							speak(SAResult,false);
+  							//finish();
+  			            } 
+  					}
+  				});
+  		}
+  		
+  		public void onError(SpeechError error) {
+  			//showTip("onError Code："	+ error.getErrorCode());
+  			Log.d("dd","onError Code："	+ error.getErrorCode());
+  		}
+  	};
+    
+    
+    protected void onActivityResult(int requestCode, int resultCode, Intent data){//重写onActivityResult
+        if(requestCode == 0){
+            //System.out.println("REQUESTCODE equal");
+            if(resultCode == 0){
+                 //    System.out.println("RESULTCODE equal");
+            	SAResult = data.getStringExtra("SRResult");
+            }
+        }
     }
     
     private void printResult(RecognizerResult results,boolean isLast) {
@@ -233,9 +358,11 @@ private InitListener mInitListener = new InitListener() {
 		for (String key : mIatResults.keySet()) {
 			resultBuffer.append(mIatResults.get(key));
 		}
-		recognizerResult=resultBuffer.toString();
-		if(isLast==true)
-		speak(recognizerResult, true);
+		SRResult=resultBuffer.toString();
+		if(isLast==true){
+		speak(SRResult, true);
+		startSA();
+		}
 	}
     
     int ret = 0; // 函数调用返回值
@@ -245,7 +372,17 @@ private InitListener mInitListener = new InitListener() {
 	public void onClick(View view) {//语音识别过程
 		player = MediaPlayer.create(MainActivity.this, R.raw.begin);
 		player.start();
-		test();
+		test();//所有的开始
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
 		//以下代码不能直接放在这里，不然出错，？？？
 		/*info.makeText(getApplicationContext(), "5", 1000).show();
 		// TODO Auto-generated method stub
