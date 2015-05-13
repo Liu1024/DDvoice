@@ -24,6 +24,7 @@ import com.example.ddvoice.JsonParser;
 
 
 
+
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.ProgressDialog;
@@ -70,7 +71,7 @@ public class MainActivity extends Activity implements OnItemClickListener ,OnCli
 	private ListView mListView;
 	private ArrayList<SiriListItem> list;
 	ChatMsgViewAdapter mAdapter;
-	
+
 
 
 	public static  String SRResult="";	//识别结果
@@ -206,6 +207,7 @@ public class MainActivity extends Activity implements OnItemClickListener ,OnCli
     	findViewById(R.id.voice_input).setOnClickListener(MainActivity.this);
     	//创建用户语音配置对象后才可以使用语音服务，建议在程序入口处调用。以下appid需要自己去科大讯飞网站申请，请勿使用默认的进行商业用途。
     	SpeechUtility.createUtility(MainActivity.this, SpeechConstant.APPID +"=553f8bf7");
+    
     }
     
     public void initUI(){//初始化UI和参数
@@ -272,13 +274,14 @@ public class MainActivity extends Activity implements OnItemClickListener ,OnCli
  		ret=0 ;
  		
  		mTextUnderstander = TextUnderstander.createTextUnderstander(MainActivity.this, textUnderstanderListener);
+ 		
  		startAnalysis();
     }
     
   //开始分析
   	private void startAnalysis(){
   		
-  		
+  		mTextUnderstander.setParameter(SpeechConstant.DOMAIN,  "iat");
   		if(mTextUnderstander.isUnderstanding()){
   			mTextUnderstander.cancel();
   			//showTip("取消");
@@ -317,9 +320,73 @@ public class MainActivity extends Activity implements OnItemClickListener ,OnCli
   							}
   							//mainActivity.speak();
   							speak(SAResult,false);
+  							xiaoDReaction(SAResult);//小D的回应
   							//finish();
   			            } 
   					}
+
+					private void xiaoDReaction(String SAResult) {
+						JSONObject semantic = null,slots =null;
+						String operation = null,service=null;
+						String name = null,song = null,keywords=null,content=null;
+						// TODO Auto-generated method stub
+						try {
+							JSONObject SAResultJson = new JSONObject(SAResult);
+							operation=SAResultJson.optString("operation");
+							service=SAResultJson.optString("service");
+							semantic=SAResultJson.optJSONObject("semantic");
+							slots=semantic.optJSONObject("slots");
+							name = slots.optString("name");
+							song = slots.optString("song");
+							keywords=slots.optString("keywords");
+							content=slots.optString("content");
+							Log.d("dd","operation:"+operation);
+							Log.d("dd","name:"+name);
+							
+							if(operation.equals("LAUNCH")){//打开应用
+								speak("好的，为您启动"+name+"...",false);
+								OpenAppAction openApp = new OpenAppAction(name,MainActivity.this);
+								openApp.runApp();
+							}
+							if(operation.equals("CALL")){//打电话
+								speak("好的，正在呼叫"+name+"...",false);
+								CallAction callAction = new CallAction(name,MainActivity.this);
+								callAction.makeCall();
+							}
+							if(operation.equals("PLAY")){//播放音乐或视频
+								speak("并不知道怎么做...",false);
+								/*if(service.equals("music")){
+									PlayAction playAction= new PlayAction(song,MainActivity.this);
+									playAction.Play();
+								}
+								if(service.equals("video")){
+									PlayAction playAction= new PlayAction(keywords,MainActivity.this);
+									playAction.Play();
+								}*/
+							}
+							if(operation.equals("QUERY")){//搜索
+								speak("好的，正在搜索"+keywords+"...",false);
+								SearchAction searchAction =new SearchAction(keywords,MainActivity.this);
+								searchAction.Search();
+							}
+							if(operation.equals("SEND")){//发短信
+								Log.d("dd","here");
+								Log.d("dd","Now_name:"+name);
+								Log.d("dd","Now_content:"+content);
+								if(name.equals("")||content.equals("")){
+									speak("没有内容我发不了哦。",false);
+								}
+								else{
+									speak("确定发短信给"+name+"，内容为：【"+content+"】？",false);
+									SendMessage sendMessage = new SendMessage(name,content,MainActivity.this);
+									sendMessage.send();
+								}
+							}
+						} catch (JSONException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+					}
   				});
   		}
   		
@@ -340,13 +407,17 @@ public class MainActivity extends Activity implements OnItemClickListener ,OnCli
         }
     }
     
+   
+    
     private void printResult(RecognizerResult results,boolean isLast) {
 		String text = JsonParser.parseIatResult(results.getResultString());
 
+		Log.d("dd","text:"+text);
 		String sn = null;
 		// 读取json结果中的sn字段
 		try {
 			JSONObject resultJson = new JSONObject(results.getResultString());
+			Log.d("dd","json:"+results.getResultString());
 			sn = resultJson.optString("sn");
 		} catch (JSONException e) {
 			e.printStackTrace();
