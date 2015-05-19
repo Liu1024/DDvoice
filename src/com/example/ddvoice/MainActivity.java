@@ -61,6 +61,19 @@ public class MainActivity extends Activity implements OnItemClickListener ,OnCli
      */
 	
 	//语义
+	
+	
+	
+	public static boolean serviceFlag=false;//表示是否在一项服务中 
+	private int mainServiceID=0;//表示目前对话的上下文是在哪一项主服务中
+	private int branchServiceID=0;//表示目前对话的上下文是在主服务中的哪一项分支服务中
+	
+	public static JSONObject semantic = null,slots =null,answer=null;public static String operation = null,service=null;
+	public static String receiver=null, name = null,price=null,code=null,song = null,keywords=null,content=null,
+			url=null,text=null;
+	
+	
+	
 	private TextUnderstander mTextUnderstander;// 语义理解对象（文本到语义）。
 	
 	
@@ -75,7 +88,7 @@ public class MainActivity extends Activity implements OnItemClickListener ,OnCli
 
 
 	public static  String SRResult="";	//识别结果
-	private String SAResult="";//语义识别结果
+	private static String SAResult="";//语义识别结果
 	private static String TAG = MainActivity.class.getSimpleName();
 	//Toast提示消息
 	private Toast info;
@@ -91,28 +104,11 @@ public class MainActivity extends Activity implements OnItemClickListener ,OnCli
 		private String mEngineType = SpeechConstant.TYPE_CLOUD;
 		private SharedPreferences mSharedPreferences;
 		
-		 //听写UI监听器
-		private RecognizerDialogListener recognizerDialogListener = new RecognizerDialogListener() {
-			public void onResult(RecognizerResult results, boolean isLast) {
-				printResult(results,isLast);
-			}
-
-			/**
-			 * 识别回调错误.
-			 */
-			public void onError(SpeechError error) {
-				speak(error.getPlainDescription(true),true);
-				info.makeText(getApplicationContext(), "error.getPlainDescription(true)", 1000).show();
-				//showTip(error.getPlainDescription(true));
-			}
-
-		};
 		
 	//语音识别监听器
 		private RecognizerListener recognizerListener = new RecognizerListener() { 
 			public void onBeginOfSpeech() {
 				//info.makeText(getApplicationContext(), "开始说话", 100).show();
-				//showTip("开始说话");
 			}	 
 			public void onError(SpeechError error) {
 				// Tips：
@@ -120,6 +116,8 @@ public class MainActivity extends Activity implements OnItemClickListener ,OnCli
 				// 如果使用本地功能（语音+）需要提示用户开启语音+的录音权限。
 				//info.makeText(getApplicationContext(), error.getPlainDescription(true), 1000).show();
 				showTip(error.getPlainDescription(true));
+				speak("没有听到您说话。",false);
+				//startSpeenchRecognition();
 			} 
 			public void onEndOfSpeech() {
 				//info.makeText(getApplicationContext(), "结束说话", 100).show();
@@ -134,7 +132,7 @@ public class MainActivity extends Activity implements OnItemClickListener ,OnCli
 				}
 			} 
 			public void onVolumeChanged(int volume) {
-				showTip("当前正在说话，音量大小：" + volume);
+				showTip("请对着mic说话，当前音量大小：" + volume);
 				//info.makeText(getApplicationContext(), "当前正在说话，音量大小：" + volume, 100).show();
 			} 
 			public void onEvent(int eventType, int arg1, int arg2, Bundle obj) {
@@ -198,9 +196,234 @@ public class MainActivity extends Activity implements OnItemClickListener ,OnCli
 			player = MediaPlayer.create(MainActivity.this, R.raw.lock);
 			player.start();
 			speak("你好，我是小D，您的智能语音助手。", false);
+			//runOnUiThread(new Runnable() {
+				//@Override
+				//public void run() {
+					// TODO Auto-generated method stub
+					//xiaoDReaction();//启动对话管理系统
+				//}
+			//});
 			
-    }
+		/*	new Thread(new Runnable() {
 
+				@Override
+				public void run() {
+					// TODO Auto-generated method stub
+					while(true)
+					xiaoDReaction();
+				}});*/
+    }
+  
+
+    public void xiaoDReaction() {
+    
+			/*	JSONObject semantic = null,slots =null;String operation = null,service=null;
+				String name = null,code=null,song = null,keywords=null,content=null;*/
+			
+				try {
+					JSONObject SAResultJson = new JSONObject(SAResult);
+					operation=SAResultJson.optString("operation");
+					service=SAResultJson.optString("service");
+					semantic=SAResultJson.optJSONObject("semantic");
+					answer=SAResultJson.optJSONObject("answer");
+					text=answer.optString("text");
+					slots=semantic.optJSONObject("slots");
+					receiver=slots.optString("receiver");
+					name = slots.optString("name");
+					price= slots.optString("price");
+					code = slots.optString("code");
+					song = slots.optString("song");
+					keywords=slots.optString("keywords");
+					content=slots.optString("content");
+					url=slots.optString("url");
+				
+				} catch (JSONException e) {
+					// TODO Auto-generated catch block
+					//speak("获取数据有问题",false);
+					e.printStackTrace();
+				}
+				SRResult=null;//置空
+				SAResult=null;
+				speak("service:"+service+" operation:"+operation,false);
+			if(serviceFlag==false){//如果不在一项服务中才进行服务的判断
+				//speak("判断服务类型",false);
+				switch(service){
+				
+				
+				case "telephone":{//电话相关服务
+					
+					switch(operation){
+					
+						case "CALL":{	//打电话
+										//必要条件【电话号码code】
+										//可选条件【人名name】【类型category】【号码归属地location】【运营商operator】【号段head_num】【尾号tail_num】
+										//可由多个可选条件确定必要条件
+							//speak("name:"+name+"code:"+code,false);
+							CallAction callAction=new CallAction(name,code,this);//目前可根据名字或电话号码拨打电话
+							callAction.start();
+							break;
+						}
+						
+						case "VIEW":{	//查看电话拨打记录
+										//必要条件无
+										//可选条件【未接电话】【已拨电话】【已接电话】
+							CallView callview =new CallView(this);
+							callview.start();
+							break;
+						}
+						
+						default :break;
+					
+					}
+					
+					break;
+				}
+				
+				case "message":{
+					
+					switch(operation){
+					
+						case "SEND":{//发送短信
+						
+							SendMessage sendMessage = new SendMessage(name,code,content,MainActivity.this);
+							sendMessage.start();
+							break;
+						}
+						
+						case "VIEW":{//查看发送短信页面
+						
+							MessageView messageView=new MessageView(this);
+							messageView.start();
+							break;
+						}
+						
+						
+						
+						case "SENDCONTACTS":{//发送名片,目前只能识别：名字发给名字
+							SendContacts sendContacts = new SendContacts(name,receiver,this);
+							sendContacts.start();
+							break;
+						}
+						default :break;
+					}
+			
+					break;
+				}
+				
+				case "app":{
+					
+					switch(operation){
+						
+						case "LAUNCH":{//打开应用
+							OpenAppAction openApp = new OpenAppAction(name,MainActivity.this);
+							openApp.start();
+							break;
+						}
+						
+						case "QUERY":{//应用中心搜索应用
+							SearchApp searchApp = new SearchApp(price,name,this);
+							searchApp.start();
+							break;
+						}
+						
+						default:break;
+					
+					}
+					break;
+				}
+				
+				case "website":{
+					
+					switch(operation){
+					
+						case "OPEN":{//打开指定网址
+						
+							OpenWebsite openWebsite=new OpenWebsite(url,name,this);
+							openWebsite.start();
+							break;
+						}
+					
+						default:break;
+					}
+					
+					break;
+				}
+				
+				case "websearch":{
+					
+					switch(operation){
+					
+						case "QUERY":{//搜索
+							
+							SearchAction searchAction =new SearchAction(keywords,MainActivity.this);
+							searchAction.Search();
+							break;
+						}
+						
+						default:break;
+					
+					}
+							
+					
+					break;
+				}
+				
+				case "openQA":{
+					
+					switch(operation){
+					
+					case "ANSWER":{//智能问答
+						
+						OpenQA openQA = new OpenQA(text,this);
+						openQA.start();
+						
+						break;
+					}
+					
+					default:break;
+					}
+					
+					break;
+				}
+				
+				default:{
+					speak("不知道您要干嘛，不过我想过一段时间我就会懂了。",false);
+					break;
+				}
+			}
+	}//结束某项服务才跳出
+}
+				
+    	//});
+			
+			
+			
+	
+		/*	if(operation.equals("LAUNCH")){//打开应用
+				speak("好的，为您启动"+name+"...",false);
+				OpenAppAction openApp = new OpenAppAction(name,MainActivity.this);
+				openApp.runApp();
+			}
+			if(operation.equals("PLAY")){//播放音乐或视频
+				speak("并不知道怎么做...",false);
+				if(service.equals("music")){
+					PlayAction playAction= new PlayAction(song,MainActivity.this);
+					playAction.Play();
+				}
+				if(service.equals("video")){
+					PlayAction playAction= new PlayAction(keywords,MainActivity.this);
+					playAction.Play();
+				}
+			}
+			if(operation.equals("QUERY")){//搜索
+				speak("好的，正在搜索"+keywords+"...",false);
+				SearchAction searchAction =new SearchAction(keywords,MainActivity.this);
+				searchAction.Search();
+			}*/
+			
+		
+	//}
+    
     public void initIflytek(){//初始讯飞设置
     	
     	//找到Siri开关
@@ -230,7 +453,9 @@ public class MainActivity extends Activity implements OnItemClickListener ,OnCli
     	
     }
     
-    public void test(){//语音识别
+    public void startSpeenchRecognition(){//语音识别
+    	player = MediaPlayer.create(MainActivity.this, R.raw.begin);
+		player.start();
     	// 显示听写对话框
     	mIatDialog.setListener(recognizerDialogListener);
 		//mIatDialog.show();
@@ -243,9 +468,27 @@ public class MainActivity extends Activity implements OnItemClickListener ,OnCli
 		
     }
     
+    //语音识别结果监听器
+	private RecognizerDialogListener recognizerDialogListener = new RecognizerDialogListener() {
+		public void onResult(RecognizerResult results, boolean isLast) {
+			printResult(results,isLast);//得到识别结果 
+		}
+
+		/**
+		 * 识别回调错误.
+		 */
+		public void onError(SpeechError error) {
+			speak(error.getPlainDescription(true),true);
+			info.makeText(getApplicationContext(), "error.getPlainDescription(true)", 1000).show();
+			//showTip(error.getPlainDescription(true));
+		}
+
+	};
+	
+    
     
     //开始语义识别
-    private void startSA(){
+    private void startSemanticAnalysis(){
     	//semanticAnalysis=new SemanticAnalysis();
     	//SAResult=semanticAnalysis.getSAResult("我是刘冬冬");//开始语义分析
     	//UnderstanderDemo testSA=new UnderstanderDemo();
@@ -270,7 +513,7 @@ public class MainActivity extends Activity implements OnItemClickListener ,OnCli
     	
     	// SRResult=MainActivity.SRResult;
  	
- 		Log.d("dd","SRResult:"+SRResult);
+ 		//Log.d("dd","SRResult:"+SRResult);
  		ret=0 ;
  		
  		mTextUnderstander = TextUnderstander.createTextUnderstander(MainActivity.this, textUnderstanderListener);
@@ -278,7 +521,7 @@ public class MainActivity extends Activity implements OnItemClickListener ,OnCli
  		startAnalysis();
     }
     
-  //开始分析
+  //开始语义分析
   	private void startAnalysis(){
   		
   		mTextUnderstander.setParameter(SpeechConstant.DOMAIN,  "iat");
@@ -313,80 +556,36 @@ public class MainActivity extends Activity implements OnItemClickListener ,OnCli
   							//Log.d(TAG, "understander result：" + result.getResultString());
   							String text = result.getResultString();
   							SAResult=text;
-  							Log.d("dd","SAResult:"+SAResult);
+  							//Log.d("dd","SAResult:"+SAResult);
   							if (TextUtils.isEmpty(text)) {
   								//Log.d("dd", "understander result:null");
   								//showTip("识别结果不正确。");
   							}
   							//mainActivity.speak();
   							speak(SAResult,false);
-  							xiaoDReaction(SAResult);//小D的回应
+  							xiaoDReaction();
   							//finish();
   			            } 
   					}
 
-					private void xiaoDReaction(String SAResult) {
-						JSONObject semantic = null,slots =null;
-						String operation = null,service=null;
-						String name = null,song = null,keywords=null,content=null;
+					
+
+					/*private void dialogueManagement(int mainServiceID,int branchServiceID) {//对话管理器
 						// TODO Auto-generated method stub
-						try {
-							JSONObject SAResultJson = new JSONObject(SAResult);
-							operation=SAResultJson.optString("operation");
-							service=SAResultJson.optString("service");
-							semantic=SAResultJson.optJSONObject("semantic");
-							slots=semantic.optJSONObject("slots");
-							name = slots.optString("name");
-							song = slots.optString("song");
-							keywords=slots.optString("keywords");
-							content=slots.optString("content");
-							Log.d("dd","operation:"+operation);
-							Log.d("dd","name:"+name);
+						if(mainServiceID==1){
+							if(branchServiceID==1){//进入了打电话服务，必要条件是【电话号码】,可选条件有【号码归属地】【运营商】【号段】【尾号】，
+								//可由多个可选条件确定必要条件
+								
+							}
+							if(branchServiceID==2){//进入了查看电话播放记录
+								
+							}
 							
-							if(operation.equals("LAUNCH")){//打开应用
-								speak("好的，为您启动"+name+"...",false);
-								OpenAppAction openApp = new OpenAppAction(name,MainActivity.this);
-								openApp.runApp();
-							}
-							if(operation.equals("CALL")){//打电话
-								speak("好的，正在呼叫"+name+"...",false);
-								CallAction callAction = new CallAction(name,MainActivity.this);
-								callAction.makeCall();
-							}
-							if(operation.equals("PLAY")){//播放音乐或视频
-								speak("并不知道怎么做...",false);
-								/*if(service.equals("music")){
-									PlayAction playAction= new PlayAction(song,MainActivity.this);
-									playAction.Play();
-								}
-								if(service.equals("video")){
-									PlayAction playAction= new PlayAction(keywords,MainActivity.this);
-									playAction.Play();
-								}*/
-							}
-							if(operation.equals("QUERY")){//搜索
-								speak("好的，正在搜索"+keywords+"...",false);
-								SearchAction searchAction =new SearchAction(keywords,MainActivity.this);
-								searchAction.Search();
-							}
-							if(operation.equals("SEND")){//发短信
-								Log.d("dd","here");
-								Log.d("dd","Now_name:"+name);
-								Log.d("dd","Now_content:"+content);
-								if(name.equals("")||content.equals("")){
-									speak("没有内容我发不了哦。",false);
-								}
-								else{
-									speak("确定发短信给"+name+"，内容为：【"+content+"】？",false);
-									SendMessage sendMessage = new SendMessage(name,content,MainActivity.this);
-									sendMessage.send();
-								}
-							}
-						} catch (JSONException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
 						}
-					}
+						if(mainServiceID==2){//进入了发短信服务，必要条件是电话号码和短信内容
+							
+						}
+					}*/
   				});
   		}
   		
@@ -412,7 +611,7 @@ public class MainActivity extends Activity implements OnItemClickListener ,OnCli
     private void printResult(RecognizerResult results,boolean isLast) {
 		String text = JsonParser.parseIatResult(results.getResultString());
 
-		Log.d("dd","text:"+text);
+		//Log.d("dd","text:"+text);
 		String sn = null;
 		// 读取json结果中的sn字段
 		try {
@@ -432,7 +631,7 @@ public class MainActivity extends Activity implements OnItemClickListener ,OnCli
 		SRResult=resultBuffer.toString();
 		if(isLast==true){
 		speak(SRResult, true);
-		startSA();
+		startSemanticAnalysis();
 		}
 	}
     
@@ -441,14 +640,8 @@ public class MainActivity extends Activity implements OnItemClickListener ,OnCli
 	@SuppressWarnings("static-access")
 	@Override
 	public void onClick(View view) {//语音识别过程
-		player = MediaPlayer.create(MainActivity.this, R.raw.begin);
-		player.start();
-		test();//所有的开始
 		
-		
-		
-		
-		
+		startSpeenchRecognition();
 		
 		
 		

@@ -14,45 +14,80 @@ import android.telephony.SmsManager;
 import android.util.Log;
 
 public class SendMessage {
-	private String mPerson;
-    private String number;
-    private String mcontent;
+	private String mPerson=null;
+    private String number=null;
+    private String mcontent=null;
     MainActivity mActivity;
     
     
-    public SendMessage(String person,String content,MainActivity activity){
+    public SendMessage(String person,String code,String content,MainActivity activity){
     	 mPerson = person;
+    	 number=code;
     	 mcontent=content;
  	    mActivity=activity;
+ 	    
     }
     
-    public void send(){
-    	if ((mPerson == null) || (mPerson.equals("")))
-	    {
-	      
-	    }else{
-	    	 mPerson=mPerson.trim();
-	    	 number=null; 
-	    	 if(isPhoneNumber(mPerson)){
-	    		 number=mPerson;
-	    	 }
-	    	 else
-	    		 number=getNumberByName(mPerson,mActivity);
-	    	 if(number == null)
-	         {
-	          // mPerson = null;
-	           //VoiceFunction fun=new VoiceFunction(mActivity,null);
-	          // fun.getVoiceResponse("查询不到  你要打给谁呢","contact", handler);
-	           mActivity.speak("找不到"+mPerson, false);
-	         }else{	    
-	        	 //发短信
-	        	// mActivity.speak("即将拨给"+mPerson+"...", false);
-	        	 //Intent intent = new Intent(Intent.ACTION_SENDTO,Uri.parse("tel:" + number,"content:"+mcontent));        	         
-	 	        //mActivity.startActivity(intent);
-	    		 //new VoiceDialog(mActivity,"您是要呼叫"+mPerson+"\n号码为"+number,rightFn,wrongFn,null);	   
-	        	 Log.d("dd","达琼电话："+number);
-	        	 Log.d("dd","短信内容："+mcontent);
-	        	 SmsManager smsManager = SmsManager.getDefault();
+    public void start(){
+    	if((number==null)||(number.equals(""))){
+    		if ((mPerson == null) || (mPerson.equals("")))
+    	    {
+    			 mActivity.speak("至少告诉我名字或者号码吧？", false);
+    	    }else{
+    	    	 mPerson=mPerson.trim();
+    	    	number=getNumberByName(mPerson,mActivity);
+    	    	 if(number == null)
+    	         {
+    	           mActivity.speak("通讯录没有找到"+mPerson, false);
+    	         }else{	    
+    	        	 //发短信
+    	        	 SmsManager smsManager = SmsManager.getDefault();
+    	        	 if(mcontent.length() > 70) {
+                         List<String> contents = smsManager.divideMessage(mcontent);
+                         for(String sms : contents) {
+                             smsManager.sendTextMessage(number, null, sms, null, null);
+                             insertDB(number,sms);
+                         }
+                     } else {
+                      smsManager.sendTextMessage(number, null, mcontent, null, null);
+                      insertDB(number,mcontent);
+                     }
+    	        	
+    	        }
+    	    }
+    	}
+    	else{
+    		if((mcontent==null)||(mcontent.equals(""))){
+    			mActivity.serviceFlag=true;
+    			mActivity.speak("你要发送什么内容呢？", false);
+    			//mActivity.startSpeenchRecognition();
+    			//
+    			Thread mThread= new Thread(){
+    				public void run(){
+    					while((mActivity.SRResult==null)||(mActivity.SRResult.equals(""))){
+    						//空转
+    					}
+    					//mActivity.speak("线程中", false);
+    					mcontent=mActivity.SRResult;
+            			SmsManager smsManager = SmsManager.getDefault();
+        	        	 if(mcontent.length() > 70) {
+                            List<String> contents = smsManager.divideMessage(mcontent);
+                            for(String sms : contents) {
+                                smsManager.sendTextMessage(number, null, sms, null, null);
+                                insertDB(number,sms);
+                            }
+                        } else {
+                         smsManager.sendTextMessage(number, null, mcontent, null, null);
+                         insertDB(number,mcontent);
+                        }
+        	        	 mActivity.serviceFlag=false;
+    				}
+    			};
+    			mThread.start();
+    			//mThread.destroy();
+    		}
+    		else{
+    			 SmsManager smsManager = SmsManager.getDefault();
 	        	 if(mcontent.length() > 70) {
                      List<String> contents = smsManager.divideMessage(mcontent);
                      for(String sms : contents) {
@@ -63,9 +98,11 @@ public class SendMessage {
                   smsManager.sendTextMessage(number, null, mcontent, null, null);
                   insertDB(number,mcontent);
                  }
-	        	 
-	        }
-	    }
+	        	
+    		}
+    		
+    	}
+    	
     }
     
     private void insertDB(String number,String content){//将发送的短信插入系统数据库中，使其在短信界面显示 
@@ -90,17 +127,6 @@ public class SendMessage {
             Log.d("dd", "插入数据库问题："+e.getMessage()); 
     	  }
     }
-    
-    /*private ContentResolver getContentResolver() {
-		// TODO Auto-generated method stub
-		return null;
-	}*/
-
-	private boolean isPhoneNumber(String num)
-	{
-		//return num.matches("\\d+$");
-		return num.matches("^\\d+\\D?$");
-	}
     
     private  String getNumberByName(String name, Context context)
 	  {

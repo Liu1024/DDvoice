@@ -21,7 +21,7 @@ public class OpenAppAction {
 	    mActivity=activity;
 	  }
 	  
-	 public void runApp()
+	 public void start()
 	 {
 		if((mAppName!=null)&&(mAppName.length()!=0)){
 			getAppByName();
@@ -47,6 +47,7 @@ public class OpenAppAction {
 			       intent.addCategory("android.intent.category.LAUNCHER");
 			       mActivity.startActivity(intent);				  
 			       }
+				   mActivity.speak("正在打开"+mAppName+"...", true);
 				   return ;
 			   }
 		 }
