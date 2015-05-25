@@ -32,75 +32,65 @@ public class SendMessage {
     	if((number==null)||(number.equals(""))){
     		if ((mPerson == null) || (mPerson.equals("")))
     	    {
-    			 mActivity.speak("至少告诉我名字或者号码吧？", false);
+    			 //mActivity.speak("至少告诉我名字或者号码吧？", false);
+    			Intent intent = new Intent("android.intent.action.SENDTO",
+                        Uri.parse("smsto:" + ""));
+    					intent.putExtra("sms_body",""); //默认短信文字
+    					mActivity.startActivity(intent);
     	    }else{
     	    	 mPerson=mPerson.trim();
     	    	number=getNumberByName(mPerson,mActivity);
     	    	 if(number == null)
     	         {
     	           mActivity.speak("通讯录没有找到"+mPerson, false);
-    	         }else{	    
-    	        	 //发短信
-    	        	 SmsManager smsManager = SmsManager.getDefault();
-    	        	 if(mcontent.length() > 70) {
-                         List<String> contents = smsManager.divideMessage(mcontent);
-                         for(String sms : contents) {
-                             smsManager.sendTextMessage(number, null, sms, null, null);
-                             insertDB(number,sms);
+    	         }else{	 
+    	        	 if((mcontent==null)||(mcontent.equals(""))){
+    	     			mActivity.serviceFlag=true;
+    	     			mActivity.speak("你要发送什么内容呢？", false);
+    	     			//mActivity.startSpeenchRecognition();
+    	     			//
+    	     			Thread mThread= new Thread(){
+    	     				public void run(){
+    	     					while((mActivity.SRResult==null)||(mActivity.SRResult.equals(""))){
+    	     						//空转
+    	     					}
+    	     					//mActivity.speak("线程中", false);
+    	     					mcontent=mActivity.SRResult;
+    	             			SmsManager smsManager = SmsManager.getDefault();
+    	         	        	 if(mcontent.length() > 70) {
+    	                             List<String> contents = smsManager.divideMessage(mcontent);
+    	                             for(String sms : contents) {
+    	                                 smsManager.sendTextMessage(number, null, sms, null, null);
+    	                                 insertDB(number,sms);
+    	                             }
+    	                         } else {
+    	                          smsManager.sendTextMessage(number, null, mcontent, null, null);
+    	                          insertDB(number,mcontent);
+    	                         }
+    	         	        	 mActivity.serviceFlag=false;
+    	     				}
+    	     			};
+    	     			mThread.start();
+    	     			//mThread.destroy();
+    	     		}
+    	        	 else{
+    	        		 //发短信
+        	        	 SmsManager smsManager = SmsManager.getDefault();
+        	        	 if(mcontent.length() > 70) {
+                             List<String> contents = smsManager.divideMessage(mcontent);
+                             for(String sms : contents) {
+                                 smsManager.sendTextMessage(number, null, sms, null, null);
+                                 insertDB(number,sms);
+                             }
+                         } else {
+                          smsManager.sendTextMessage(number, null, mcontent, null, null);
+                          insertDB(number,mcontent);
                          }
-                     } else {
-                      smsManager.sendTextMessage(number, null, mcontent, null, null);
-                      insertDB(number,mcontent);
-                     }
+    	        	 }
+    	        	
     	        	
     	        }
     	    }
-    	}
-    	else{
-    		if((mcontent==null)||(mcontent.equals(""))){
-    			mActivity.serviceFlag=true;
-    			mActivity.speak("你要发送什么内容呢？", false);
-    			//mActivity.startSpeenchRecognition();
-    			//
-    			Thread mThread= new Thread(){
-    				public void run(){
-    					while((mActivity.SRResult==null)||(mActivity.SRResult.equals(""))){
-    						//空转
-    					}
-    					//mActivity.speak("线程中", false);
-    					mcontent=mActivity.SRResult;
-            			SmsManager smsManager = SmsManager.getDefault();
-        	        	 if(mcontent.length() > 70) {
-                            List<String> contents = smsManager.divideMessage(mcontent);
-                            for(String sms : contents) {
-                                smsManager.sendTextMessage(number, null, sms, null, null);
-                                insertDB(number,sms);
-                            }
-                        } else {
-                         smsManager.sendTextMessage(number, null, mcontent, null, null);
-                         insertDB(number,mcontent);
-                        }
-        	        	 mActivity.serviceFlag=false;
-    				}
-    			};
-    			mThread.start();
-    			//mThread.destroy();
-    		}
-    		else{
-    			 SmsManager smsManager = SmsManager.getDefault();
-	        	 if(mcontent.length() > 70) {
-                     List<String> contents = smsManager.divideMessage(mcontent);
-                     for(String sms : contents) {
-                         smsManager.sendTextMessage(number, null, sms, null, null);
-                         insertDB(number,sms);
-                     }
-                 } else {
-                  smsManager.sendTextMessage(number, null, mcontent, null, null);
-                  insertDB(number,mcontent);
-                 }
-	        	
-    		}
-    		
     	}
     	
     }

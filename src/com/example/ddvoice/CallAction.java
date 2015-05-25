@@ -39,8 +39,11 @@ public class CallAction {
 		if((number==null)||(number.equals(""))){
 			 if ((mPerson == null) || (mPerson.equals("")))
 			    {
-				//很奇怪讯飞的语义识别，永远都不会执行这一句话
-				 mActivity.speak("至少告诉我名字或者号码吧？", false);
+				
+				 //mActivity.speak("至少告诉我名字或者号码吧？", false);
+				 Intent intent = new Intent(Intent.ACTION_DIAL,Uri.parse("tel:" + ""));
+				 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+				 mActivity.startActivity(intent);
 			    }else{
 			    	 mPerson=mPerson.trim();
 			    	 number=getNumberByName(mPerson,mActivity);
